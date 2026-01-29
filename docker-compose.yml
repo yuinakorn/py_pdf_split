@@ -1,0 +1,15 @@
+services:
+  fastapi-worker:
+    build: .
+    container_name: pdf_worker
+    volumes:
+      - pdf_shared_volume:/shared
+    ports:
+      - "8000:8000"
+    environment:
+      - SHARED_DIR=/shared
+    # restart: always
+
+volumes:
+  pdf_shared_volume:
+    name: pdf_shared_volume
