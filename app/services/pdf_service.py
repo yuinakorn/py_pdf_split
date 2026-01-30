@@ -146,21 +146,59 @@ def process_pdf_job(job_id: str) -> Dict[str, Any]:
             "createdFiles": created_files # Return partial
         }
 
-def cleanup_output_directory() -> None:
+def cleanup_output_directory(year: str) -> bool:
     """
-    Remove all files and subdirectories in the output directory.
-    Keeps the root output directory itself.
+    Clears the output directory for a specific year.
+    Returns True if directory existed and was deleted, False otherwise.
     """
-    output_dir = config.OUTPUT_DIR
-    if not output_dir.exists():
-        return
-
-    for item in output_dir.iterdir():
+    year_dir = config.OUTPUT_DIR / year
+    if year_dir.exists():
         try:
-            if item.is_file() or item.is_symlink():
-                item.unlink()
-            elif item.is_dir():
-                shutil.rmtree(item)
+            shutil.rmtree(year_dir)
+            return True
         except Exception as e:
-            logger.error(f"Failed to delete {item}: {e}")
+            logger.error(f"Failed to delete {year_dir}: {e}")
+            return False
+    return False
+
+def list_inbox_files() -> List[str]:
+    """
+    List all PDF files in the inbox directory.
+    """
+    if not config.INBOX_DIR.exists():
+        return []
+    return [f.name for f in config.INBOX_DIR.glob("*.pdf")]
+
+def delete_inbox_file(filename: str) -> bool:
+    """
+    Delete a specific file from the inbox directory.
+    """
+    file_path = config.INBOX_DIR / filename
+    if file_path.exists() and file_path.is_file():
+        try:
+            file_path.unlink()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete inbox file {filename}: {e}")
+            return False
+    return False
+
+def list_output_files(year: str) -> List[str]:
+    """
+    List all PDF files in the output directory for a specific year.
+    """
+    year_dir = config.OUTPUT_DIR / year
+    if not year_dir.exists():
+        return []
+    return [f.name for f in year_dir.glob("*.pdf")]
+
+def list_output_years() -> List[str]:
+    """
+    List all year directories in the output folder.
+    """
+    if not config.OUTPUT_DIR.exists():
+        return []
+    # Filter only directories
+    return [d.name for d in config.OUTPUT_DIR.iterdir() if d.is_dir()]
+    return False
 

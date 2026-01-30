@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from app.services import pdf_service
 from app.core import config
@@ -52,33 +52,78 @@ async def process_job(job_id: str) -> Dict[str, Any]:
 @router.get("/status/{job_id}")
 async def get_job_status(job_id: str) -> Dict[str, Any]:
     """
-    Check status of a job from the filesystem.
+    Check status of a job.
+    Since output is now grouped by year, we check if the Year folder exists.
     """
-    # Logic: Check if output directory exists and count files
-    output_job_dir = config.OUTPUT_DIR / job_id
+    # 1. Extract Year
+    year = pdf_service.extract_year_from_job_id(job_id)
+    output_year_dir = config.OUTPUT_DIR / year
     
-    if not output_job_dir.exists():
-         # Maybe it's pending? Or never existed.
-         # Check if input exists
-         input_file = config.INBOX_DIR / f"{job_id}.pdf"
-         if input_file.exists():
-             return {"jobId": job_id, "status": "pending"}
-         else:
-             raise HTTPException(status_code=404, detail="Job not found")
-             
-    # If exists, count files
-    files = [f.name for f in output_job_dir.glob("*.pdf")]
-    return {
-        "jobId": job_id,
-        "status": "completed", # Or 'processed' since we don't track state elsewhere
-        "fileCount": len(files),
-        "files": files
-    }
+    # 2. Check Input existence (to verify job validity)
+    input_file = config.INBOX_DIR / f"{job_id}.pdf"
+    
+    # 3. Logic:
+    # If Output Year Dir exists -> We assume 'completed' (loose check)
+    # If not, but Input exists -> 'pending'
+    # Neither -> 'not found'
+    
+    if output_year_dir.exists():
+        # Count total files in that year as a stat
+        # Note: This is NOT the count for this specific job, but for the whole year.
+        files = [f.name for f in output_year_dir.glob("*.pdf")]
+        return {
+            "jobId": job_id,
+            "status": "completed", 
+            "message": "Year directory exists. Files are merged.",
+            "year": year,
+            "totalFilesInYear": len(files)
+        }
+    
+    if input_file.exists():
+        return {"jobId": job_id, "status": "pending"}
+        
+    raise HTTPException(status_code=404, detail="Job not found")
 
-@router.delete("/output", tags=["Maintenance"])
-async def clear_output_directory() -> Dict[str, str]:
+@router.delete("/output/{year}", tags=["Maintenance"])
+async def clear_output_directory_by_year(year: str) -> Dict[str, Any]:
     """
-    Clear all files and subdirectories in the shared output directory.
+    Clear all files in the output directory for a specific fiscal year.
     """
-    pdf_service.cleanup_output_directory()
-    return {"status": "success", "message": "Output directory cleared"}
+    success = pdf_service.cleanup_output_directory(year)
+    if success:
+        return {"status": "success", "message": f"Output directory for year {year} cleared"}
+    else:
+        # It's not necessarily an error if it didn't exist, but we can report it.
+        return {"status": "not_found", "message": f"Directory for year {year} not found or already empty"}
+
+@router.get("/inbox", tags=["Inbox"])
+async def list_inbox_files() -> List[str]:
+    """
+    List all PDF files currently in the inbox.
+    """
+    return pdf_service.list_inbox_files()
+
+@router.delete("/inbox/{filename}", tags=["Inbox"])
+async def delete_inbox_file(filename: str) -> Dict[str, Any]:
+    """
+    Delete a specific file from the inbox.
+    """
+    success = pdf_service.delete_inbox_file(filename)
+    if success:
+        return {"status": "success", "message": f"File {filename} deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="File not found or could not be deleted")
+
+@router.get("/output/{year}", tags=["Retrieval"])
+async def list_output_files(year: str) -> List[str]:
+    """
+    List all processed PDF files for a specific year.
+    """
+    return pdf_service.list_output_files(year)
+
+@router.get("/output", tags=["Retrieval"])
+async def list_output_years() -> List[str]:
+    """
+    List all fiscal years (subdirectories) available in the output directory.
+    """
+    return pdf_service.list_output_years()
