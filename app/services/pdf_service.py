@@ -120,10 +120,11 @@ def process_pdf_job(job_id: str) -> Dict[str, Any]:
             # We append _{page_number+1} if it is a duplicate or just generic safety?
             # Let's check existence using path
             file_path = output_job_dir / filename
-            if file_path.exists():
-                # Append page number to make unique
-                filename = f"{citizen_id}_{i+1}.pdf"
-                file_path = output_job_dir / filename
+            # Modification: Always overwrite existing files.
+            # Previously:
+            # if file_path.exists():
+            #     filename = f"{citizen_id}_{i+1}.pdf"
+            #     file_path = output_job_dir / filename
             
             with open(file_path, "wb") as out_f:
                 writer.write(out_f)
