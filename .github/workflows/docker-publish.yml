@@ -1,0 +1,64 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Image name'
+        required: true
+        default: 'ghcr.io/yuinakorn/pdf-split-worker'
+      platform:
+        description: 'Target platform'
+        required: false
+        default: 'linux/amd64'
+      version:
+        description: 'Version tag'
+        required: false
+        default: ''
+      build_args:
+        description: 'Build arguments (key=value, one per line)'
+        required: false
+        default: ''
+
+env:
+  IMAGE_NAME: ${{ inputs.image || 'ghcr.io/yuinakorn/pdf-split-worker' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,format=long
+            ${{ inputs.version != '' && format('type=raw,value={0}', inputs.version) || '' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ inputs.platform || 'linux/amd64' }}
+          build-args: ${{ inputs.build_args }}
