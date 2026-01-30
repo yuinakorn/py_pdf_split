@@ -7,7 +7,7 @@ from app.core import config
 
 router = APIRouter()
 
-@router.get("/files/{year}/{cid}", tags=["Retrieval"])
+@router.get("/files/{year}/{cid}", tags=["Retrieval Output"])
 async def get_employee_file(year: str, cid: str) -> Dict[str, Any]:
     """
     Check if a specific PDF file exists for an employee and return its metadata.
