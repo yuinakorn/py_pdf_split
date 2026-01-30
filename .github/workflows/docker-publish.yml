@@ -8,7 +8,7 @@ on:
       image:
         description: 'Image name'
         required: true
-        default: 'ghcr.io/yuinakorn/pdf-split-worker'
+        default: 'ghcr.io/yuinakorn/py_pdf_split'
       platform:
         description: 'Target platform'
         required: false
@@ -23,7 +23,7 @@ on:
         default: ''
 
 env:
-  IMAGE_NAME: ${{ inputs.image || 'ghcr.io/yuinakorn/pdf-split-worker' }}
+  IMAGE_NAME: ${{ inputs.image || 'ghcr.io/yuinakorn/py_pdf_split' }}
 
 jobs:
   build:

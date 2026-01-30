@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # กำหนดค่าเริ่มต้นให้กับตัวแปรต่างๆ (ถ้ามี ENV ส่งมาจะใช้ค่าที่ส่งมา ถ้าไม่มีจะใช้ค่า default เหล่านี้)
-IMAGE=${IMAGE:-ghcr.io/yuinakorn/pdf-split-worker}
+IMAGE=${IMAGE:-ghcr.io/yuinakorn/py_pdf_split}
 PLATFORM=${PLATFORM:-linux/amd64}
 VERSION=${VERSION:-}
 ENV_FILE=${ENV_FILE:-.env}
