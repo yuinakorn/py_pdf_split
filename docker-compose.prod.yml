@@ -1,0 +1,22 @@
+services:
+  fastapi-worker:
+    image: ghcr.io/yuinakorn/py_pdf_split:latest
+    container_name: pdf_worker
+    volumes:
+      - pdf_shared_volume:/shared
+    ports:
+      - "8000:8000"
+    environment:
+      - SHARED_DIR=/shared
+    restart: always
+    networks:           # <-- เพิ่มส่วนนี้
+      - pdf_network
+
+volumes:
+  pdf_shared_volume:
+    external: true      # <-- แนะนำให้เปลี่ยนเป็น external: true เพื่อใช้ Volume ร่วมกันชัวร์ๆ
+    name: pdf_shared_volume
+
+networks:               # <-- เพิ่ม block นี้
+  pdf_network:
+    external: true

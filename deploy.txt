@@ -1,0 +1,34 @@
+# Deploy to Production Server
+
+1. **Upload Configuration**
+   Copy `docker-compose.prod.yml` to your server (rename it to `docker-compose.yml` on the server).
+   
+   ```bash
+   scp docker-compose.prod.yml user@your-server-ip:/path/to/app/docker-compose.yml
+   ```
+
+2. **Login to GHCR**
+   On the server, log in to GitHub Container Registry. You will need a Personal Access Token (PAT) with `read:packages` scope.
+   
+   ```bash
+   echo $CR_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+   ```
+
+3. **Deploy / Update**
+   Pull the latest image and restart the container.
+   
+   ```bash
+   # Pull the latest image
+   docker compose pull
+   
+   # Start/Restart the container in detached mode
+   docker compose up -d
+   ```
+
+4. **Verify**
+   Check if the container is running:
+   
+   ```bash
+   docker compose ps
+   docker compose logs -f
+   ```
